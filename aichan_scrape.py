@@ -14,30 +14,56 @@ now = datetime.strptime(test_date, '%Y-%m-%d').replace(tzinfo=pytz.timezone('Asi
 formatted_date = now.strftime('%Y/%m/%Y%m%d')
 
 base_url = "https://www.aichan-engineer.com/"
+
+# XXの範囲を指定
+min_xx = 1
+max_xx = 99
+
+skipped_count = 0
+
+# 数値が入らないパターン
 target_url = f"{base_url}{formatted_date}-ai.html"
 
 response = requests.get(target_url)
-response.raise_for_status()
+if response.status_code == 200:
+    # このループの前にこのURLを処理する（URLを処理するコードをここに追加）
+    pass
+else:
+    skipped_count += 1
 
-# HTML parsing
-soup = BeautifulSoup(response.text, "html.parser")
+for i in range(min_xx, max_xx + 1):  # このループを追加
+    target_url = f"{base_url}{formatted_date}-ai_{i:02}.html"
 
-# Find all the divs with class "tab"
-divs = soup.find_all("div", class_="tab")
+    response = requests.get(target_url)
+    if response.status_code != 200:
+        skipped_count += 1
+        continue
 
-for idx, div in enumerate(divs, start=1):
-    print(f"レース{idx}:")
-    # Extract the table from the div
-    table = div.find("table")
+    # HTML解析
+    soup = BeautifulSoup(response.text, "html.parser")
 
-    # Extract the table rows from the table body
-    rows = table.tbody.find_all("tr")
+    # クラス "tab" のdivをすべて見つける
+    divs = soup.find_all("div", class_="tab")
 
-    for row in rows:
-        # Extract the horse name and jockey name from the table data
-        horse_name = row.find_all("td")[4].text
-        jockey_name = row.find_all("td")[5].text
+    race_differences = []
 
-        # Print the horse name and jockey name
-        print(f"  馬名: {horse_name}, 騎手名: {jockey_name}")
-    print()
+    for idx, div in enumerate(divs, start=1):
+        race_name = div.find("h3", {"id": f"toc{idx}_headline_1"}).text
+        table = div.find("table")
+        rows = table.tbody.find_all("tr")
+
+        tr_5_value = float(rows[4].find_all("td")[2].text)
+        tr_6_value = float(rows[5].find_all("td")[2].text)
+
+        difference = round(tr_5_value - tr_6_value, 4)
+        race_differences.append((race_name, difference))
+
+    # 差分を降順に並び替える
+    race_differences.sort(key=lambda x: x[1], reverse=True)
+
+    # 並び替えた結果を出力する
+    for race_name, difference in race_differences:
+        print(f"レース名：{race_name}")
+        print(f"差分：{difference:.4f}")
+
+print(f"\n{skipped_count} 件のURLがスキップされました。")
