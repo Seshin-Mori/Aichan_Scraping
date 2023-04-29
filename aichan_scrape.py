@@ -19,16 +19,26 @@ def process_url(target_url):
         table = div.find("table")
         rows = table.tbody.find_all("tr")
 
-        tr_5_value = float(rows[4].find_all("td")[2].text)
-        tr_6_value = float(rows[5].find_all("td")[2].text)
+        first_group_sum = 0
+        second_group_sum = 0
 
-        difference = round(tr_5_value - tr_6_value, 4)
+        for i, row in enumerate(rows):
+            value = float(row.find_all("td")[2].text)
+            if i < 5:
+                first_group_sum += value
+            else:
+                second_group_sum += value
+
+        difference = round(first_group_sum - second_group_sum, 4)
         race_differences.append((race_name, difference))
 
     return race_differences
 
 # 日時の取得とURLの生成
-now = datetime.now(pytz.timezone('Asia/Tokyo'))
+#now = datetime.now(pytz.timezone('Asia/Tokyo'))
+# テスト用日時（コメントアウトを解除して使用）
+test_date = '2023-04-29'
+now = datetime.strptime(test_date, '%Y-%m-%d').replace(tzinfo=pytz.timezone('Asia/Tokyo'))
 formatted_date = now.strftime('%Y/%m/%Y%m%d')
 base_url = "https://www.aichan-engineer.com/"
 min_xx = 1
